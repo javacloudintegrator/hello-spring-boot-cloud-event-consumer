@@ -1,0 +1,13 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: hello-spring-boot-docker
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - image: docker.io/{username}/hello-spring-boot-docker
+        env:
+        - name: TARGET
+          value: "Spring Boot Hello JCI"
