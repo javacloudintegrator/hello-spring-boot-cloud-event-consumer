@@ -9,7 +9,7 @@
 ===== TEST by getting URL via kn service describe. Notice response. =====
 
 7. Create trigger
-    kubectl -n default apply -f - << EOF
+kubectl -n example-event-consumer apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
@@ -19,6 +19,20 @@ spec:
   filter:
     attributes:
       type: com.jci.spring
+  subscriber:
+    ref:
+     apiVersion: v1
+     kind: Service
+     name: hello-spring-boot-cloud-event-consumer
+EOF
+
+kubectl -n example-event-consumer apply -f - << EOF
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: hello-spring-boot-cloud-event-consumer
+spec:
+  broker: default
   subscriber:
     ref:
      apiVersion: v1
@@ -39,13 +53,13 @@ apiVersion: eventing.knative.dev/v1
 kind: broker
 metadata:
  name: default
- namespace: default
+ namespace: example-event-consumer
 EOF
 
 
 
 # Knative service test via curl container
-kubectl -n default apply -f - << EOF
+kubectl -n example-event-consumer apply -f - << EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -66,13 +80,36 @@ spec:
 EOF
 
 
-curl -v -d '{"value": "Hey there!"}' \
+curl -v -d '{"value": "Event producer says hello via Knative Eventing!"}' \
     -H'Content-type: application/json' \
     -H'ce-id: 1' \
     -H'ce-source: hello-spring-boot-cloud-event-producer' \
-    -H'ce-type: com.jci.spring' \
+    -H'ce-type: com.jci.cloud.event' \
     -H'ce-specversion: 1.0' \
-    http://broker-ingress.knative-eventing.svc.cluster.local/default/default
+    http://broker-ingress.knative-eventing.svc.cluster.local/example-event-consumer/default
+
+curl -v -d '{"value": "Event producer says hello!"}' \
+    -H'Content-type: application/json' \
+    -H'ce-id: 1' \
+    -H'ce-source: hello-spring-boot-cloud-event-producer' \
+    -H'ce-type: com.jci.cloud.event' \
+    -H'ce-specversion: 1.0' \
+    http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/event
+
+
+
+
+curl -v -d '{"value": "Event producer says hello!"}' \
+    -H'Content-type: application/json' \
+    -H'ce-id: 1' \
+    -H'ce-source: hello-spring-boot-cloud-event-producer' \
+    -H'ce-type: com.jci.cloud.event' \
+    -H'ce-specversion: 1.0' \
+    http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/event
+
+
+
+
 
 Docker test:
 
@@ -98,4 +135,4 @@ curl -v -d '{"value": "Event producer says hello!"}' \
     -H'ce-source: hello-spring-boot-cloud-event-producer' \
     -H'ce-type: com.jci.cloud.event' \
     -H'ce-specversion: 1.0' \
-    http://hello-spring-boot-cloud-event-consumer.default.127.0.0.1.xip.io
+    http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/event

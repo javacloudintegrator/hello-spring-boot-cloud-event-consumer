@@ -1,6 +1,8 @@
 package com.jci.spring;
 
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import org.springframework.boot.SpringApplication;
@@ -36,7 +38,10 @@ public class KnativeHelloWorldApplication {
     // Use CloudEvent API and manual type conversion of request and response body
     public Mono<CloudEvent> hello(@RequestBody Mono<CloudEvent> body) {
 
-        System.out.println("Received cloud event");
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+
+        System.out.println(dtf.format(now) + ": Received cloud event");
         String outEventData = "{\"value\": \"Event consumer says hello back!\"}";
 
         Mono<CloudEvent> outEvent = body.map(event -> CloudEventBuilder.from(event).withId(UUID.randomUUID().toString())
@@ -50,8 +55,11 @@ public class KnativeHelloWorldApplication {
     // Let Spring do the type conversion of request and response body
     public ResponseEntity<CloudEvent> echo(@RequestBody CloudEvent cloudEvent, @RequestHeader HttpHeaders headers) {
 
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+
         String inEventData = new String(cloudEvent.getData().toBytes());
-        System.out.println("Incoming CloudEventData: " + inEventData);
+        System.out.println(dtf.format(now) + ": Incoming CloudEventData: " + inEventData);
         String outEventData = "{\"value\": \"Event consumer says hello back!\"}";
 
         CloudEvent cloudEventToReturn = CloudEventBuilder.from(cloudEvent).withId(UUID.randomUUID().toString())

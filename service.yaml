@@ -13,5 +13,7 @@ spec:
         # the maximum number of pods to scale up to
         autoscaling.knative.dev/maxScale: "1"
     spec:
+      selector:
+        app: hello-spring-boot-cloud-event-consumer
       containers:
         - image: javacloudintegrator/hello-spring-boot-cloud-event-consumer
