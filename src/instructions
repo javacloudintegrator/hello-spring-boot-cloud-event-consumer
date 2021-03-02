@@ -9,6 +9,8 @@
 ===== TEST by getting URL via kn service describe. Notice response. =====
 
 7. Create trigger
+
+
 kubectl -n example-event-consumer apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
@@ -18,12 +20,13 @@ spec:
   broker: default
   filter:
     attributes:
-      type: com.jci.spring
+      type: com.jci.cloud.event.in
   subscriber:
     ref:
      apiVersion: v1
      kind: Service
      name: hello-spring-boot-cloud-event-consumer
+    uri: /event
 EOF
 
 kubectl -n example-event-consumer apply -f - << EOF
@@ -33,11 +36,15 @@ metadata:
   name: hello-spring-boot-cloud-event-consumer
 spec:
   broker: default
+  filter:
+    attributes:
+      type: com.jci.cloud.event.mono
   subscriber:
     ref:
      apiVersion: v1
      kind: Service
      name: hello-spring-boot-cloud-event-consumer
+    uri: /mono
 EOF
 
 8. Create curl pod and attach. Send event to default broker. Notice logs.
@@ -80,59 +87,68 @@ spec:
 EOF
 
 
-curl -v -d '{"value": "Event producer says hello via Knative Eventing!"}' \
-    -H'Content-type: application/json' \
-    -H'ce-id: 1' \
-    -H'ce-source: hello-spring-boot-cloud-event-producer' \
-    -H'ce-type: com.jci.cloud.event' \
-    -H'ce-specversion: 1.0' \
-    http://broker-ingress.knative-eventing.svc.cluster.local/example-event-consumer/default
 
-curl -v -d '{"value": "Event producer says hello!"}' \
+=========== THESE WORK!!!! ============
+curl -v -d '"Foo"' \
     -H'Content-type: application/json' \
     -H'ce-id: 1' \
     -H'ce-source: hello-spring-boot-cloud-event-producer' \
-    -H'ce-type: com.jci.cloud.event' \
+    -H'ce-type: com.jci.cloud.event.in' \
     -H'ce-specversion: 1.0' \
+    http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/hello
+
+curl -v -d '"Foo"' \
+    -H'Content-type: application/json' \
+    -H'ce-id: 1' \
+    -H'ce-source: hello-spring-boot-cloud-event-producer' \
+    -H'ce-type: com.jci.cloud.event.in' \
+    -H'ce-specversion: 1.0' \
+    http://localhost:8080/hello
+
+  curl -v -d '{"value": "Event producer says hello!"}' \
+    -H'Content-type: application/json' \
+    -H'ce-id: 1' \
+    -H'ce-source: hello-spring-boot-cloud-event-producer' \
+    -H'ce-type: com.jci.cloud.event.in' \
+    -H'ce-specversion: 1.0' \
+    http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/mono
+
+curl -v -d '{"value": "YO! Event producer says hello!"}' \
+    -H'Content-type: application/json' \
+    -H'ce-id: 1' \
+    -H'ce-source: hello-spring-boot-cloud-event-producer' \
+    -H'ce-type: com.jci.cloud.event.in' \
+    -H'Ce-Specversion: 1.0' \
     http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/event
 
 
-
-
-curl -v -d '{"value": "Event producer says hello!"}' \
+curl -v -d '{"value": "YO! Event producer says hello!"}' \
     -H'Content-type: application/json' \
     -H'ce-id: 1' \
     -H'ce-source: hello-spring-boot-cloud-event-producer' \
-    -H'ce-type: com.jci.cloud.event' \
+    -H'ce-type: com.jci.cloud.event.in' \
     -H'ce-specversion: 1.0' \
-    http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/event
+    http://localhost:8080/listener
 
 
-
-
-
-Docker test:
-
-curl -v -d '{"value": "Event producer says hello!"}' \
-    -H'Content-type: application/json' \
-    -H'ce-id: 1' \
-    -H'ce-source: hello-spring-boot-cloud-event-producer' \
-    -H'ce-type: com.jci.cloud.event' \
-    -H'ce-specversion: 1.0' \
-    http://localhost:8080/event
-
-curl -v -d '{"value": "Event producer says hello!"}' \
-    -H'Content-type: application/json' \
+!!!!!!!! THIS ONE BLOWS UP with an exception!!!!!
+Caused by: com.fasterxml.jackson.databind.exc.MismatchedInputException: Missing mandatory specversion attribute
+  curl -v -d '{"value": "Event producer says hello!"}' \
+    -H'Content-type: application/cloudevents+json' \
     -H'ce-id: 1' \
     -H'ce-source: hello-spring-boot-cloud-event-producer' \
     -H'ce-type: com.jci.cloud.event' \
     -H'ce-specversion: 1.0' \
     http://localhost:8080/mono
 
-curl -v -d '{"value": "Event producer says hello!"}' \
+
+
+????
+
+curl -v -d '{"value": "YO! Event producer says hello!"}' \
     -H'Content-type: application/json' \
     -H'ce-id: 1' \
     -H'ce-source: hello-spring-boot-cloud-event-producer' \
-    -H'ce-type: com.jci.cloud.event' \
-    -H'ce-specversion: 1.0' \
-    http://hello-spring-boot-cloud-event-consumer.example-event-consumer.127.0.0.1.xip.io/event
+    -H'ce-type: com.jci.cloud.event.in' \
+    -H'Ce-Specversion: 1.0' \
+    http://broker-ingress.knative-eventing.svc.cluster.local/example-event-consumer/default
